@@ -15,10 +15,10 @@ public class Main implements Runnable, ActionListener {
     private int thisCar;
     private String track;
     private Socket clientSocket = null;
-    //private DataOutputStream stringOutputStream = null;
-    //private BufferedReader stringInputStream = null;
-    private ObjectInputStream carInputStream;
-    private ObjectOutputStream carOutputStream;
+    private DataOutputStream stringOutputStream = null;
+    private BufferedReader stringInputStream = null;
+    //private ObjectInputStream carInputStream;
+    //private ObjectOutputStream carOutputStream;
     private String request = null;
     private String responseLine = null;
     private String host = "localhost";
@@ -35,16 +35,16 @@ public class Main implements Runnable, ActionListener {
 
         try {
             clientSocket = new Socket( "localhost", 5000);
-            //stringOutputStream = new DataOutputStream(
-              //      clientSocket.getOutputStream());
-            carOutputStream = new ObjectOutputStream(
+            stringOutputStream = new DataOutputStream(
                     clientSocket.getOutputStream());
+            //carOutputStream = new ObjectOutputStream(
+              //      clientSocket.getOutputStream());
 
-            //stringInputStream = new BufferedReader(
-              //      new InputStreamReader(
-                //            clientSocket.getInputStream()));
-            carInputStream = new ObjectInputStream(
-                    clientSocket.getInputStream());
+            stringInputStream = new BufferedReader(
+                    new InputStreamReader(
+                            clientSocket.getInputStream()));
+            //carInputStream = new ObjectInputStream(
+              //      clientSocket.getInputStream());
 
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host: " + host );
@@ -58,14 +58,27 @@ public class Main implements Runnable, ActionListener {
         // ############
 
        if ( clientSocket != null &&
-                carOutputStream != null &&
-                carInputStream != null ) {
+               stringInputStream != null &&
+               stringOutputStream != null ) {
+                //carOutputStream != null &&
+                //carInputStream != null ) {
             try {
 
                 //cars[0] = new Car(1, 50, 350);
                 //cars[1] = new Car(2, 100, 350);
 
-                while((cars[0] = (Car) carInputStream.readObject()) == null);
+                //while((cars[0] = (Car) carInputStream.readObject()) == null);
+                String carData;
+                while ((carData = stringInputStream.readLine()) == null);
+
+                String[] carDataArray = carData.split("::");
+                int[] carDataIntArr = new int[carDataArray.length];
+                for (int i = 0; i < carDataArray.length; i++) {
+                    carDataIntArr[i] = Integer.parseInt(carDataArray[i]);
+                }
+
+                cars[0] = new Car(carDataIntArr[0], carDataIntArr[1], carDataIntArr[2]);
+
 
                 /*
 
@@ -94,9 +107,9 @@ public class Main implements Runnable, ActionListener {
             } catch (IOException e) {
                 //System.err.println("IOException: " + e);
                 e.printStackTrace();
-            } catch (ClassNotFoundException e) {
+            } /*catch (ClassNotFoundException e) {
                 System.err.println("Could not find class: " + e);
-            }
+            }*/
         }
 
 
@@ -109,13 +122,27 @@ public class Main implements Runnable, ActionListener {
 
 
         try {
-            cars[1] = (Car) carInputStream.readObject();
+            //cars[1] = (Car) carInputStream.readObject();
+
+            String carData;
+            if ((carData = stringInputStream.readLine()) != null) {
+
+                String[] carDataArray = carData.split("::");
+                int[] carDataIntArr = new int[carDataArray.length];
+                for (int i = 0; i < carDataArray.length; i++) {
+                    carDataIntArr[i] = Integer.parseInt(carDataArray[i]);
+                }
+
+                cars[1] = new Car(carDataIntArr[0], carDataIntArr[1], carDataIntArr[2]);
+            }
+
+
         } catch (IOException ioe) {
             ioe.printStackTrace();
-        } catch (ClassNotFoundException cnfe) {
+        } /*catch (ClassNotFoundException cnfe) {
             cnfe.printStackTrace();
         }
-
+*/
 
         /*String otherCarData = "::350::0::0\n";
         int otherCar = 0;
@@ -130,7 +157,7 @@ public class Main implements Runnable, ActionListener {
         }*/
         track = "Square";
 
-        animation = new RaceJPanel(cars[0], cars[1], thisCar, track, carInputStream, carOutputStream);
+        animation = new RaceJPanel(cars[0], cars[1], thisCar, track, stringInputStream, stringOutputStream);
         window = new JFrame("Race Track");
         menuBar = new JMenuBar();
 
@@ -152,8 +179,8 @@ public class Main implements Runnable, ActionListener {
                 super.windowClosing(e);
 
                 try {
-                    carOutputStream.close();
-                    carInputStream.close();
+                    stringOutputStream.close();
+                    stringInputStream.close();
                     clientSocket.close();
                 } catch (UnknownHostException uhe) {
                     System.err.println("Trying to connect to unknown host: " + uhe);

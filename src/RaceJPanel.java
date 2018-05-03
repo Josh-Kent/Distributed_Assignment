@@ -29,11 +29,13 @@ public class RaceJPanel extends JPanel implements KeyListener {
     private List<Rectangle> rectList;
     private int[] lapCounter = { 0, 0};
     private boolean[] pastStart = {false, false};
-    private ObjectInputStream inputStream;
-    private ObjectOutputStream outputStream;
+    //private ObjectInputStream inputStream;
+    //private ObjectOutputStream outputStream;
+    private BufferedReader inputStream;
+    private DataOutputStream outputStream;
 
 
-    public RaceJPanel(Car car1, Car car2, int thisCar, String track, ObjectInputStream inputStream, ObjectOutputStream outputStream) {
+    public RaceJPanel(Car car1, Car car2, int thisCar, String track, BufferedReader inputStream, DataOutputStream outputStream) {
 
         this.cars = new Car[]{car1, car2};
         this.startPositions = new Car[] {car1, car2};
@@ -231,7 +233,7 @@ public class RaceJPanel extends JPanel implements KeyListener {
         car1Images[currentImage1].paintIcon(this, g, cars[0].getX(), cars[0].getY());
         car2Images[currentImage2].paintIcon(this, g, cars[1].getX(), cars[1].getY());
 
-        sendCarData();
+        sendCarData(cars[0]);
         receiveCarData();
 
         cars[0].update();
@@ -251,17 +253,17 @@ public class RaceJPanel extends JPanel implements KeyListener {
         }
     }
 
-    private void sendCarData() {
-        /*String carData;
+    private void sendCarData(Car car) {
+        String carData;
         carData = Integer.toString(car.getX());
         carData = carData + "::" + Integer.toString(car.getY());
         carData = carData + "::" + Integer.toString(car.getDirection());
-        carData = carData + "::" + Integer.toString(car.getSpeed());*/
+        carData = carData + "::" + Integer.toString(car.getSpeed());
 
 
         try {
-            //outputStream.writeBytes(carData + "\n\r");
-            outputStream.writeObject(cars[0]);
+            outputStream.writeBytes(carData + "\n");
+            //outputStream.writeObject(cars[0]);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -269,26 +271,29 @@ public class RaceJPanel extends JPanel implements KeyListener {
 
     private void receiveCarData() {
 
-        try {/*
-            String carData = inputStream.readLine();
+        try {
+            String carData;
+            if ( (carData = inputStream.readLine()) != null ) {
+                if (!carData.isEmpty()) {
 
-            String[] carDataArray = carData.split("::");
+                    String[] carDataArray = carData.split("::");
 
-            car.setX(Integer.parseInt(carDataArray[0]));
-            car.setY(Integer.parseInt(carDataArray[1]));
-            car.setDirection(Integer.parseInt(carDataArray[2]));
-            car.setSpeed(Integer.parseInt(carDataArray[3]));*/
+                    cars[1].setX(Integer.parseInt(carDataArray[0]));
+                    cars[1].setY(Integer.parseInt(carDataArray[1]));
+                    cars[1].setDirection(Integer.parseInt(carDataArray[2]));
+                    cars[1].setSpeed(Integer.parseInt(carDataArray[3]));
 
-            cars[1] = (Car) inputStream.readObject();
-
+                    //cars[1] = (Car) inputStream.readObject();
+                }
+            }
 
         } catch (IOException ioe) {
             ioe.printStackTrace();
         } catch (NumberFormatException nfe) {
             nfe.printStackTrace();
-        } catch (ClassNotFoundException cnfe) {
+        } /*catch (ClassNotFoundException cnfe) {
             cnfe.printStackTrace();
-        }
+        }*/
 
 
     }

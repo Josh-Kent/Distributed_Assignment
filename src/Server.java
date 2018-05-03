@@ -57,10 +57,10 @@ public class Server implements Runnable {
 
         protected Socket socket;
         protected ServerThread[] threads;
-        //private BufferedReader inputStream = null;
-        //private DataOutputStream outputStream = null;
-        private ObjectOutputStream carOutputStream;
-        private ObjectInputStream carInputStream;
+        private BufferedReader inputStream = null;
+        private DataOutputStream outputStream = null;
+        //private ObjectOutputStream carOutputStream;
+        //private ObjectInputStream carInputStream;
         private int maxClientThreads;
         private int thisThread = 0;
         private int otherThread = 1;
@@ -81,15 +81,15 @@ public class Server implements Runnable {
             ServerThread[] threads = this.threads;
 
             try {
-                //inputStream = new BufferedReader(
-                  //      new InputStreamReader(
-                    //            socket.getInputStream()));
-                //outputStream = new DataOutputStream(
-                  //      socket.getOutputStream());
-                carInputStream = new ObjectInputStream(
-                        socket.getInputStream());
-                carOutputStream = new ObjectOutputStream(
+                inputStream = new BufferedReader(
+                        new InputStreamReader(
+                                socket.getInputStream()));
+                outputStream = new DataOutputStream(
                         socket.getOutputStream());
+                //carInputStream = new ObjectInputStream(
+                 //       socket.getInputStream());
+                //carOutputStream = new ObjectOutputStream(
+                  //      socket.getOutputStream());
 
                 for (int i = 0; i < maxClientThreads; i++) {
                     if (threads[i] != null && threads[i] != this) {
@@ -99,11 +99,16 @@ public class Server implements Runnable {
                     }
                 }
 
-                thisCar = new Car(nArr[thisThread], xArr[thisThread], 350);
-                otherCar = new Car(nArr[otherThread], xArr[otherThread], 350);
+                //thisCar = new Car(nArr[thisThread], xArr[thisThread], 350);
+                //otherCar = new Car(nArr[otherThread], xArr[otherThread], 350);
 
-                threads[thisThread].carOutputStream.writeObject(thisCar);
-                threads[thisThread].carOutputStream.writeObject(otherCar);
+                //threads[thisThread].carOutputStream.writeObject(thisCar);
+                //threads[thisThread].carOutputStream.writeObject(otherCar);
+
+                String car1 = nArr[thisThread] + "::" + xArr[thisThread] + "::350\n";
+                String car2 = nArr[otherThread] + "::" + xArr[otherThread] + "::350\n";
+                threads[thisThread].outputStream.writeBytes(car1);
+                threads[thisThread].outputStream.writeBytes(car2);
 
 
                 //threads[thisThread].outputStream.writeBytes(Integer.toString(thisThread) + "\n");
@@ -119,14 +124,21 @@ public class Server implements Runnable {
 
             try {
                 while (true) {
-                    Car car = (Car) carInputStream.readObject();
-                    if (thisCar.gameOver == true) {
-                        break;
-                    } else {
+                    //Car car = (Car) carInputStream.readObject();
+                    String line;
+                    if ( (line = inputStream.readLine()) != null) {
                         if (threads[otherThread] != null) {
-                            threads[otherThread].carOutputStream.writeObject(car);
+
+                            threads[otherThread].outputStream.writeBytes(line + "\n");
                         }
-                    }
+                    } else if (line == "GAME OVER") {
+                    //if (thisCar.gameOver == true) {
+                        break;
+                    } //else {
+                        //if (threads[otherThread] != null) {
+                          //  threads[otherThread].carOutputStream.writeObject(car);
+                        //}
+                    //}
                 }
 
 
@@ -135,15 +147,17 @@ public class Server implements Runnable {
                         threads[i] = null;
                     }
                 }
-                carInputStream.close();
-                carOutputStream.close();
+                //carInputStream.close();
+                //carOutputStream.close();
+                inputStream.close();
+                outputStream.close();
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
                 return;
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
+            } //catch (ClassNotFoundException e) {
+                //e.printStackTrace();
+            //}
 
         }
     }
