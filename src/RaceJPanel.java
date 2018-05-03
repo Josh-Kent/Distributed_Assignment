@@ -2,6 +2,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
@@ -19,25 +20,31 @@ public class RaceJPanel extends JPanel implements KeyListener {
     private final static int ANIMATION_DELAY = 50;
     private int width = 50;
     private int height = 50;
-    private Car car1;
-    private Car car2;
+    private Car[] cars;
+    private Car[] startPositions;
+    //private int thisCar;
+    //private int theirCar;
     private Timer animationTimer;
     private String track;
     private List<Rectangle> rectList;
     private int[] lapCounter = { 0, 0};
     private boolean[] pastStart = {false, false};
-    private JLabel car1Laps = new JLabel("Car 1: 0");
-    private JLabel car2Laps = new JLabel("Car 2: 0");
+    private ObjectInputStream inputStream;
+    private ObjectOutputStream outputStream;
 
 
-    public RaceJPanel(Car car1, Car car2, String track) {
+    public RaceJPanel(Car car1, Car car2, int thisCar, String track, ObjectInputStream inputStream, ObjectOutputStream outputStream) {
 
-        this.car1 = car1;
-        this.car2 = car2;
+        this.cars = new Car[]{car1, car2};
+        this.startPositions = new Car[] {car1, car2};
+        //this.thisCar = thisCar;
+        //this.theirCar = (thisCar == 0) ? 1 : 0;
         this.track = track;
+        this.inputStream = inputStream;
+        this.outputStream = outputStream;
 
-        final String CAR1_IMAGE_NAME = "Top_Down_Car_" + car1.getCarNum() + "_50px_";
-        final String CAR2_IMAGE_NAME = "Top_Down_Car_" + car2.getCarNum() + "_50px_";
+        final String CAR1_IMAGE_NAME = "Top_Down_Car_1_50px_";
+        final String CAR2_IMAGE_NAME = "Top_Down_Car_2_50px_";
         car1Images = new ImageIcon[TOTAL_IMAGES];
         car2Images = new ImageIcon[TOTAL_IMAGES];
 
@@ -55,8 +62,7 @@ public class RaceJPanel extends JPanel implements KeyListener {
     }
 
     public void reset() {
-        car1 = new Car( 1, 50, 350);
-        car2 = new Car( 2, 100, 350);
+        cars = startPositions;
 
         currentImage1 = 0;
         currentImage2 = 0;
@@ -222,24 +228,69 @@ public class RaceJPanel extends JPanel implements KeyListener {
         g.drawString("Car 1: " + lapCounter[0], 175, 325);
         g.drawString("Car 2: " + lapCounter[1], 175, 375);
 
-        car1Images[currentImage1].paintIcon(this, g, car1.getX(), car1.getY());
-        car2Images[currentImage2].paintIcon(this, g, car2.getX(), car2.getY());
+        car1Images[currentImage1].paintIcon(this, g, cars[0].getX(), cars[0].getY());
+        car2Images[currentImage2].paintIcon(this, g, cars[1].getX(), cars[1].getY());
 
-        car1.update();
-        car2.update();
+        sendCarData();
+        receiveCarData();
+
+        cars[0].update();
+        cars[1].update();
         checkCarCollision();
-        checkWallCollision(car1);
-        checkWallCollision(car2);
-        checkLaps(car1, startRect);
-        checkLaps(car2, startRect);
-        checkPastStart(car1, pastStartRect);
-        checkPastStart(car2, pastStartRect);
+        checkWallCollision(cars[0]);
+        checkWallCollision(cars[1]);
+        checkLaps(cars[0], startRect);
+        checkLaps(cars[1], startRect);
+        checkPastStart(cars[0], pastStartRect);
+        checkPastStart(cars[1], pastStartRect);
 
 
         if (animationTimer.isRunning()) {
-            currentImage1 = car1.getDirection();
-            currentImage2 = car2.getDirection();
+            currentImage1 = cars[0].getDirection();
+            currentImage2 = cars[1].getDirection();
         }
+    }
+
+    private void sendCarData() {
+        /*String carData;
+        carData = Integer.toString(car.getX());
+        carData = carData + "::" + Integer.toString(car.getY());
+        carData = carData + "::" + Integer.toString(car.getDirection());
+        carData = carData + "::" + Integer.toString(car.getSpeed());*/
+
+
+        try {
+            //outputStream.writeBytes(carData + "\n\r");
+            outputStream.writeObject(cars[0]);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void receiveCarData() {
+
+        try {/*
+            String carData = inputStream.readLine();
+
+            String[] carDataArray = carData.split("::");
+
+            car.setX(Integer.parseInt(carDataArray[0]));
+            car.setY(Integer.parseInt(carDataArray[1]));
+            car.setDirection(Integer.parseInt(carDataArray[2]));
+            car.setSpeed(Integer.parseInt(carDataArray[3]));*/
+
+            cars[1] = (Car) inputStream.readObject();
+
+
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        } catch (NumberFormatException nfe) {
+            nfe.printStackTrace();
+        } catch (ClassNotFoundException cnfe) {
+            cnfe.printStackTrace();
+        }
+
+
     }
 
     private void diagonalCollision(int yDiff, int xDiff, int xStart, int yStart) {
@@ -252,14 +303,14 @@ public class RaceJPanel extends JPanel implements KeyListener {
     }
 
     private void checkCarCollision() {
-        Rectangle car1Rect = car1.getBounds();
-        Rectangle car2Rect = car2.getBounds();
+        Rectangle car1Rect = cars[0].getBounds();
+        Rectangle car2Rect = cars[1].getBounds();
 
         if (car1Rect.intersects(car2Rect)) {
-            car1.setSpeed(0);
-            car2.setSpeed(0);
+            cars[0].setSpeed(0);
+            cars[1].setSpeed(0);
 
-            gameOver();
+           // gameOver();
         }
     }
     private void checkWallCollision(Car car) {
@@ -296,10 +347,12 @@ public class RaceJPanel extends JPanel implements KeyListener {
     }
 
     private void gameOver() {
+        cars[0].gameOver = true;
         endGame("GAME OVER!\\nYou crashed!", "Game Over!");
     }
 
     private void gameWon(Car winner) {
+        winner.gameOver = true;
 
         endGame("Car " + winner.getCarNum() + " Won!\nCongratulations!",
                 "Winner");
@@ -409,37 +462,19 @@ public class RaceJPanel extends JPanel implements KeyListener {
             char c = e.getKeyChar();
             switch (c) {
                 case 'w':
-                    car1.forward(car1.getSpeed());
+                    cars[0].forward(cars[0].getSpeed());
                     break;
                 case 'a':
-                    car1.turnLeft(car1.getDirection());
+                    cars[0].turnLeft(cars[0].getDirection());
                     break;
                 case 's':
-                    car1.backwards(car1.getSpeed());
+                    cars[0].backwards(cars[0].getSpeed());
                     break;
                 case 'd':
-                    car1.turnRight(car1.getDirection());
+                    cars[0].turnRight(cars[0].getDirection());
                     break;
             }
 
-        } else if ( id == KeyEvent.KEY_PRESSED ){
-            int keyCode = e.getKeyCode();
-            switch (keyCode) {
-                case KeyEvent.VK_UP:
-                    car2.forward(car2.getSpeed());
-                    break;
-                case KeyEvent.VK_DOWN:
-                    car2.backwards(car2.getSpeed());
-                    break;
-                case KeyEvent.VK_LEFT:
-                    car2.turnLeft(car2.getDirection());
-                    break;
-                case KeyEvent.VK_RIGHT:
-                    car2.turnRight(car2.getDirection());
-                    break;
-                default:
-                    break;
-            }
         }
     }
 

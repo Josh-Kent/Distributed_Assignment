@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.io.Serializable;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
@@ -7,26 +8,27 @@ import javax.swing.JComponent;
 import javax.swing.Action;
 
 
-public class Car {
-    private final static int maxSpeed = 5;
-    private final static int[][] angles = {
+public class Car implements Serializable {
+    private final int maxSpeed = 5;
+    private final int[][] angles = {
             { 0,-2}, { 1,-2}, { 2,-2}, { 2,-1},
             { 2, 0}, { 2, 1}, { 2, 2}, { 1, 2},
             { 0, 2}, {-1, 2}, {-2, 2}, {-2, 1},
             {-2, 0}, {-2,-1}, {-2,-2}, {-1,-2}
     };
-    private final static int[][] collisionCorner = {
+    private final int[][] collisionCorner = {
             {12, 5}, { 7, 4}, { 5, 5}, { 3, 9},
             { 5,12}, { 3, 7}, { 4, 4}, { 7, 3},
             {12, 5}, { 9, 3}, { 5, 4}, { 4, 7},
             { 5,12}, { 4, 9}, { 5, 5}, { 9, 4}
     };
-    private final static int[][] collisionDimensions = {
+    private final int[][] collisionDimensions = {
             {26,40}, {34,43}, {40,40}, {43,34},
             {40,26}, {43,34}, {41,41}, {34,43},
             {26,40}, {34,43}, {41,41}, {43,34},
             {43,26}, {43,34}, {41,41}, {34,43}
     };
+    public boolean gameOver = false;
     private int carNum;
     private int x;
     private int y;
@@ -59,6 +61,18 @@ public class Car {
 
     public int getSpeed() {
         return speed;
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+
+    public void setDirection(int direction) {
+        this.direction = direction;
     }
 
     public void setSpeed(int speed) {
