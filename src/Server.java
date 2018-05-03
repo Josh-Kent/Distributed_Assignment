@@ -119,12 +119,12 @@ public class Server implements Runnable {
 
             try {
                 while (true) {
-                    otherCar = (Car) carInputStream.readObject();
-                    if (otherCar.gameOver == true) {
+                    Car car = (Car) carInputStream.readObject();
+                    if (thisCar.gameOver == true) {
                         break;
                     } else {
                         if (threads[otherThread] != null) {
-                            threads[otherThread].carOutputStream.writeObject(otherCar);
+                            threads[otherThread].carOutputStream.writeObject(car);
                         }
                     }
                 }

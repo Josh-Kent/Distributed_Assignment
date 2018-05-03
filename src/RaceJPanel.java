@@ -43,8 +43,8 @@ public class RaceJPanel extends JPanel implements KeyListener {
         this.inputStream = inputStream;
         this.outputStream = outputStream;
 
-        final String CAR1_IMAGE_NAME = "Top_Down_Car_1_50px_";
-        final String CAR2_IMAGE_NAME = "Top_Down_Car_2_50px_";
+        final String CAR1_IMAGE_NAME = "Top_Down_Car_" + cars[0].getCarNum() + "_50px_";
+        final String CAR2_IMAGE_NAME = "Top_Down_Car_" + cars[1].getCarNum() + "_50px_";
         car1Images = new ImageIcon[TOTAL_IMAGES];
         car2Images = new ImageIcon[TOTAL_IMAGES];
 
