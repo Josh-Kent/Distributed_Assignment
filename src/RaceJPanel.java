@@ -1,55 +1,54 @@
 import java.awt.*;
 import java.awt.event.*;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.swing.*;
 
 import static java.lang.Math.round;
 
 public class RaceJPanel extends JPanel implements KeyListener {
 
-
-    protected ImageIcon car1Images[];
-    protected ImageIcon car2Images[];
+    // variable declaration
+    private ImageIcon car1Images[];
+    private ImageIcon car2Images[];
     private final static int TOTAL_IMAGES = 16;
     private int currentImage1 = 0;
     private int currentImage2 = 0;
     private final static int ANIMATION_DELAY = 50;
-    private int width = 50;
-    private int height = 50;
     private Car[] cars;
     private Car[] startPositions;
-    //private int thisCar;
-    //private int theirCar;
     private Timer animationTimer;
     private String track;
     private List<Rectangle> rectList;
     private int[] lapCounter = { 0, 0};
     private boolean[] pastStart = {false, false};
-    //private ObjectInputStream inputStream;
-    //private ObjectOutputStream outputStream;
     private BufferedReader inputStream;
     private DataOutputStream outputStream;
 
+    // constructor
+    RaceJPanel(Car car1, Car car2, String track, BufferedReader inputStream, DataOutputStream outputStream) {
 
-    public RaceJPanel(Car car1, Car car2, int thisCar, String track, BufferedReader inputStream, DataOutputStream outputStream) {
-
+        // populate array with car objects
         this.cars = new Car[]{car1, car2};
-        this.startPositions = new Car[] {car1, car2};
-        //this.thisCar = thisCar;
-        //this.theirCar = (thisCar == 0) ? 1 : 0;
+        // save backup of car locations for reset method
+        this.startPositions = new Car[cars.length];
+        startPositions[0] = new Car(car1);
+        startPositions[1] = new Car(car2);
+
+        // save track variable and I/O streams
         this.track = track;
         this.inputStream = inputStream;
         this.outputStream = outputStream;
 
+        // save image locations for drawing cars
         final String CAR1_IMAGE_NAME = "Top_Down_Car_" + cars[0].getCarNum() + "_50px_";
         final String CAR2_IMAGE_NAME = "Top_Down_Car_" + cars[1].getCarNum() + "_50px_";
         car1Images = new ImageIcon[TOTAL_IMAGES];
         car2Images = new ImageIcon[TOTAL_IMAGES];
 
+        // load images to array
         for (int count = 0; count < TOTAL_IMAGES; count++) {
             car1Images[count] = new ImageIcon(getClass().getResource(
                     "images/" + CAR1_IMAGE_NAME + count + ".png"));
@@ -58,13 +57,16 @@ public class RaceJPanel extends JPanel implements KeyListener {
         }
     }
 
+    // update track to chosen option
     public void update(String track) {
         this.track = track;
         this.reset();
     }
 
-    public void reset() {
-        cars = startPositions;
+    // reset track to starting state
+    private void reset() {
+        cars[0] = new Car(startPositions[0]);
+        cars[1] = new Car(startPositions[1]);
 
         currentImage1 = 0;
         currentImage2 = 0;
@@ -72,13 +74,17 @@ public class RaceJPanel extends JPanel implements KeyListener {
         lapCounter = new int[]{0, 0};
         pastStart = new boolean[]{false, false};
 
+        // restart animation
+        stopAnimation();
         startAnimation();
 
+        // redraw track
         this.repaint();
     }
 
     @Override
     public void paintComponent(Graphics g) {
+        // run parent paintComponent method
         super.paintComponent(g);
 
         // set up variables for dashed lines
@@ -111,7 +117,8 @@ public class RaceJPanel extends JPanel implements KeyListener {
             g.fillRect(50, 100, 750, 500); //Fill road
 
 
-        if (track == "Figure8" ) {
+        // code for Figure of 8 track
+        if (Objects.equals(track, "Figure8")) {
 
             //Draw inner grass
             g.setColor(c1);
@@ -171,7 +178,8 @@ public class RaceJPanel extends JPanel implements KeyListener {
 
 
 
-            rectList = new ArrayList<Rectangle>();
+            // collision detection for figure 8 track
+            rectList = new ArrayList<>();
 
 
             rectList.add( new Rectangle( 150, 200, 70, 300));
@@ -194,19 +202,21 @@ public class RaceJPanel extends JPanel implements KeyListener {
 
 
 
-
+        // draw standard square track
         } else {
 
+            // draw grass
             g.setColor( c1 );
-            g.fillRect( 150, 200, 550, 300 ); // grass
+            g.fillRect( 150, 200, 550, 300 );
 
+            // draw road edges
             g.setColor( c3 );
-            g.drawRect(50, 100, 750, 500);  // outer edge
-            g.drawRect(150, 200, 550, 300); // inner edge
+            g.drawRect(50, 100, 750, 500);
+            g.drawRect(150, 200, 550, 300);
 
-            rectList = new ArrayList<Rectangle>();
+            // collision detection for square track
+            rectList = new ArrayList<>();
 
-            //rectList.add( new Rectangle(  50, 100, 750, 500) );
             rectList.add( new Rectangle( 150, 200, 550, 300) );
             rectList.add( new Rectangle( 800, 100, 1, 500));
             rectList.add( new Rectangle( 49, 100, 1, 500));
@@ -214,6 +224,7 @@ public class RaceJPanel extends JPanel implements KeyListener {
             rectList.add( new Rectangle( 50, 99, 750, 1));
 
 
+            // draw dashed line
             g2d.setStroke(dashed);
             g2d.setColor( c4 );
             g2d.drawRect( 100, 150, 650, 400 ); // mid-lane marker
@@ -226,33 +237,42 @@ public class RaceJPanel extends JPanel implements KeyListener {
         Rectangle startRect = new Rectangle(50, 350, 100, 1);
         Rectangle pastStartRect = new Rectangle(50, 250, 100, 1);
 
+        // draw lap counters
         g.setColor(Color.black);
         g.drawString("Car 1: " + lapCounter[0], 175, 325);
         g.drawString("Car 2: " + lapCounter[1], 175, 375);
 
+        // draw cars
         car1Images[currentImage1].paintIcon(this, g, cars[0].getX(), cars[0].getY());
         car2Images[currentImage2].paintIcon(this, g, cars[1].getX(), cars[1].getY());
 
+        // send and receive car data to server
         sendCarData(cars[0]);
         receiveCarData();
 
+        // update car positions
         cars[0].update();
         cars[1].update();
+
+        // check car collision
         checkCarCollision();
         checkWallCollision(cars[0]);
         checkWallCollision(cars[1]);
+
+        // check if cars have completed a lap, only if they have traveled so far around the track
         checkLaps(cars[0], startRect);
         checkLaps(cars[1], startRect);
         checkPastStart(cars[0], pastStartRect);
         checkPastStart(cars[1], pastStartRect);
 
-
+        // change car image if animation is still running
         if (animationTimer.isRunning()) {
             currentImage1 = cars[0].getDirection();
             currentImage2 = cars[1].getDirection();
         }
     }
 
+    // send car data to server
     private void sendCarData(Car car) {
         String carData;
         carData = Integer.toString(car.getX());
@@ -260,21 +280,24 @@ public class RaceJPanel extends JPanel implements KeyListener {
         carData = carData + "::" + Integer.toString(car.getDirection());
         carData = carData + "::" + Integer.toString(car.getSpeed());
 
-
         try {
             outputStream.writeBytes(carData + "\n");
-            //outputStream.writeObject(cars[0]);
+        // handle exceptions
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    // receive car data from server
     private void receiveCarData() {
-
         try {
             String carData;
+            // check string exists and is not empty
             if ( (carData = inputStream.readLine()) != null ) {
                 if (!carData.isEmpty()) {
+                    if (Objects.equals(carData, "GAME OVER")) {
+                        endGame("GAME OVER!\nReceived message from server!", "Game Over!");
+                    }
 
                     String[] carDataArray = carData.split("::");
 
@@ -282,31 +305,25 @@ public class RaceJPanel extends JPanel implements KeyListener {
                     cars[1].setY(Integer.parseInt(carDataArray[1]));
                     cars[1].setDirection(Integer.parseInt(carDataArray[2]));
                     cars[1].setSpeed(Integer.parseInt(carDataArray[3]));
-
-                    //cars[1] = (Car) inputStream.readObject();
                 }
             }
 
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        } catch (NumberFormatException nfe) {
-            nfe.printStackTrace();
-        } /*catch (ClassNotFoundException cnfe) {
-            cnfe.printStackTrace();
-        }*/
-
-
+        // handle exceptions
+        } catch (IOException | NumberFormatException e) {
+            e.printStackTrace();
+        }
     }
 
+    // create diagonal collision rectangles for figure of 8 track
     private void diagonalCollision(int yDiff, int xDiff, int xStart, int yStart) {
         int j;
         for ( int i = 0; i < yDiff; i++) {
             j = (int)round(((double)xDiff/(double)yDiff)*(double)i);
             rectList.add( new Rectangle( xStart + j, yStart + i, 2, 2 ) );
-
         }
     }
 
+    // check if cars have collided with one another
     private void checkCarCollision() {
         Rectangle car1Rect = cars[0].getBounds();
         Rectangle car2Rect = cars[1].getBounds();
@@ -315,12 +332,15 @@ public class RaceJPanel extends JPanel implements KeyListener {
             cars[0].setSpeed(0);
             cars[1].setSpeed(0);
 
-           // gameOver();
+            gameOver();
         }
     }
+
+    // check if car has collided with a wall
     private void checkWallCollision(Car car) {
         Rectangle carRect = car.getBounds();
 
+        // for each rectangle, check if car intersects
         for (Rectangle temp : rectList) {
             if (temp.intersects(carRect)) {
                 car.setSpeed(0);
@@ -328,6 +348,7 @@ public class RaceJPanel extends JPanel implements KeyListener {
         }
     }
 
+    // check if car has completed a lap, if car has completed 3, game is won
     private void checkLaps(Car car, Rectangle startRect) {
         Rectangle carRect = car.getBounds();
         int carNum = car.getCarNum();
@@ -342,6 +363,7 @@ public class RaceJPanel extends JPanel implements KeyListener {
         }
     }
 
+    // ensure car has traveled sufficient distance around the track
     private void checkPastStart(Car car, Rectangle pastStartRect) {
         Rectangle carRect = car.getBounds();
         int carNum = car.getCarNum();
@@ -351,11 +373,13 @@ public class RaceJPanel extends JPanel implements KeyListener {
         }
     }
 
+    // handle game over, display message
     private void gameOver() {
         cars[0].gameOver = true;
-        endGame("GAME OVER!\\nYou crashed!", "Game Over!");
+        endGame("GAME OVER!\nYou crashed!", "Game Over!");
     }
 
+    // handle game won, display message
     private void gameWon(Car winner) {
         winner.gameOver = true;
 
@@ -363,12 +387,23 @@ public class RaceJPanel extends JPanel implements KeyListener {
                 "Winner");
     }
 
+    // handle game shutdown
     private void endGame(String messageString, String titleString) {
+        // send GAME OVER message to server
+        try {
+            outputStream.writeBytes("GAME OVER");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         stopAnimation();
+        // get parent JFrame
         JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
 
+        // set options for user to select in dialog box
         Object[] options = { "Exit", "Restart" };
 
+        // more options for dialog box
         final JOptionPane optionPane = new JOptionPane(
                 messageString,
                 JOptionPane.QUESTION_MESSAGE,
@@ -377,20 +412,18 @@ public class RaceJPanel extends JPanel implements KeyListener {
                 options,
                 options[0]);
 
+        // set title of dialog box
         final JDialog dialog = new JDialog(frame,
                 titleString,
                 true);
 
+        // set up dialog box, do nothing on close
         dialog.setContentPane(optionPane);
         dialog.setLocationRelativeTo(frame);
         dialog.setDefaultCloseOperation(
                 JDialog.DO_NOTHING_ON_CLOSE);
-        /*dialog.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent we) {
 
-            }
-        });*/
-
+        // override default property change listener
         optionPane.addPropertyChangeListener(
                 e -> {
                     String prop = e.getPropertyName();
@@ -405,18 +438,16 @@ public class RaceJPanel extends JPanel implements KeyListener {
         dialog.pack();
         dialog.setVisible(true);
 
+        // handle dialog options clicked
         String value = (String) optionPane.getValue();
-        if (value == "Exit") {
+        if (Objects.equals(value, "Exit")) {
             frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
-        } else if (value == "Restart") {
+        } else if (Objects.equals(value, "Restart")) {
             this.reset();
         }
-
-
     }
 
-
-
+    // start animation timer
     public void startAnimation() {
         if (animationTimer == null) {
             currentImage1 = 0;
@@ -431,7 +462,8 @@ public class RaceJPanel extends JPanel implements KeyListener {
         }
     }
 
-    public void stopAnimation() {
+    // stop animation timer
+    private void stopAnimation() {
         animationTimer.stop();
     }
 
@@ -442,9 +474,12 @@ public class RaceJPanel extends JPanel implements KeyListener {
 
     @Override
     public Dimension getPreferredSize() {
+        int width = 50;
+        int height = 50;
         return new Dimension(width, height);
     }
 
+    // handle key pressed events
     @Override
     public void keyPressed(KeyEvent e) {
         handleKeyEvent(e);
@@ -460,6 +495,7 @@ public class RaceJPanel extends JPanel implements KeyListener {
         handleKeyEvent(e);
     }
 
+    // use WASD to move car
     private void handleKeyEvent(KeyEvent e) {
         int id = e.getID();
 
@@ -483,6 +519,7 @@ public class RaceJPanel extends JPanel implements KeyListener {
         }
     }
 
+    // timer functionality
     private class TimerHandler implements ActionListener {
         public void actionPerformed( ActionEvent actionEvent ) {
             repaint();

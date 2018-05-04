@@ -1,14 +1,8 @@
 import java.awt.*;
-import java.io.Serializable;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
-import javax.swing.JComponent;
-import javax.swing.Action;
 
+public class Car {
 
-public class Car implements Serializable {
+    // instantiate variables
     private final int maxSpeed = 5;
     private final int[][] angles = {
             { 0,-2}, { 1,-2}, { 2,-2}, { 2,-1},
@@ -32,17 +26,24 @@ public class Car implements Serializable {
     private int carNum;
     private int x;
     private int y;
-
     private int direction = 0;
     private int speed = 0;
 
-    public Car( int n, int x, int y) {
+    // constructor
+    Car( int n, int x, int y) {
         this.carNum = n;
         this.x = x;
         this.y = y;
-
     }
 
+    // constructor
+    Car(Car car) {
+        this.carNum = car.getCarNum();
+        this.x = car.getX();
+        this.y = car.getY();
+    }
+
+    // getters and setters
     public int getX() {
         return x;
     }
@@ -79,13 +80,13 @@ public class Car implements Serializable {
         this.speed = speed;
     }
 
+    // update method, changes coordinates based on speed and direction
     public void update() {
-
         this.x = x + (angles[direction][0] * speed);
         this.y = y + (angles[direction][1] * speed);
-
     }
 
+    // handle turn left signal
     public void turnLeft( int dir ) {
         if (dir <= 0) {
             this.direction = 15;
@@ -94,6 +95,7 @@ public class Car implements Serializable {
         }
     }
 
+    // handle turn right signal
     public void turnRight( int dir ) {
         if (dir >= 15) {
             this.direction = 0;
@@ -102,6 +104,7 @@ public class Car implements Serializable {
         }
     }
 
+    // handle forwards signal
     public void forward(int speed) {
         if ( speed < maxSpeed ) {
             this.speed = speed + 1;
@@ -110,6 +113,7 @@ public class Car implements Serializable {
         }
     }
 
+    // handle backwards signal
     public void backwards(int speed) {
         if ( speed > (0 - maxSpeed)) {
             this.speed = speed - 1;
@@ -119,6 +123,7 @@ public class Car implements Serializable {
 
     }
 
+    // get bounds for collision detection
     public Rectangle getBounds() {
         return new Rectangle(x + collisionCorner[direction][0], y + collisionCorner[direction][1],
                 collisionDimensions[direction][0], collisionDimensions[direction][1]);
